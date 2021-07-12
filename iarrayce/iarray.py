@@ -1,7 +1,7 @@
 import caterva as cat
 import numpy as np
 from .info import InfoReporter
-from .. import iarrayce as ia
+import iarrayce as ia
 import os
 
 

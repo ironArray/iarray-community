@@ -9,7 +9,7 @@
 # Information and shall use it only in accordance with the terms of the license agreement.
 ###########################################################################################
 
-from src import iarrayce as ia
+import iarrayce as ia
 
 from dataclasses import dataclass, field, fields, replace, asdict
 from typing import List, Sequence, Any, Union
@@ -243,7 +243,6 @@ class Store:
                 raise ValueError("plainbuffer array does not support neither a chunks nor blocks")
             else:
                 raise ValueError("blosc array needs chunks and blocks")
-
 
 @dataclass
 class Config():

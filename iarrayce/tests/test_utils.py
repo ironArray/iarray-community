@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from src import iarrayce as ia
+import iarrayce as ia
 import os
 
 
