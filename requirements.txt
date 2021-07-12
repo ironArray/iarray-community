@@ -1,2 +1,2 @@
-caterva
+caterva>=0.5.3
 numpy
