@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway&display=swap');
+
+:root {
+    --main-color:  rgb(248, 248, 250);
+    --first-color: rgb(237, 210, 76);
+    --second-color: rgb(158, 182, 191);
+    --third-color: rgb(83, 107, 115);
+    --color-primary: rgb(190, 6, 84);
+    --font-size-base: 27px;
+}
+
+/* colors */
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--third-color);
+}
+
+.nav li.active>a, .navbar-nav>.active>.nav-link {
+    color: var(--first-color)!important;
+}
+
+.toc-entry>.nav-link.active {
+    border-left-color: var(--first-color);
+    color: var(--first-color)!important;
+}
+
+.nav li>a:hover {
+    color: var(--third-color)!important;
+}
+
+/* Code */
+code {
+    color: var(--third-color)!important;
+    font-size: 100%;
+}
+
+code.descname {
+    font-size: 1em;
+}
+
+/* Links */
+a:hover {
+color: var(--first-color);
+text-decoration: underline;
+}
+
+a {
+color: var(--third-color);
+background-color: transparent;
+text-decoration: none;
+}
+
+/* Header links */
+
+a.headerlink:hover {
+    background-color: var(--first-color);
+    color: #fff;
+}
+
+a.headerlink {
+    color: var(--first-color);
+}
+
+body {
+    font-family: 'Raleway';
+}
+
+.rst-content .toctree-wrapper > p.caption, h1, h2, h3, h4, h5, h6, legend {
+    font-family: 'Raleway';
+    margin-bottom: .5rem;
+    font-weight: 500;
+    line-height: 1.2;
+}

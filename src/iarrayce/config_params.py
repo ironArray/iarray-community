@@ -9,13 +9,34 @@
 # Information and shall use it only in accordance with the terms of the license agreement.
 ###########################################################################################
 
-import iarrayce as ia
+from src import iarrayce as ia
 
 from dataclasses import dataclass, field, fields, replace, asdict
 from typing import List, Sequence, Any, Union
 from contextlib import contextmanager
 import numpy as np
 import copy
+from enum import Enum
+
+
+# Compression codecs
+class Codecs(Enum):
+    BLOSCLZ = 0
+    LZ4 = 1
+    LZ4HC = 2
+    ZLIB = 4
+    ZSTD = 5
+    LIZARD = 6
+
+
+# Filters
+class Filters(Enum):
+    NOFILTER = 0
+    SHUFFLE = 1
+    BITSHUFFLE = 2
+    DELTA = 4
+    TRUNC_PREC = 8
+
 
 # Global variable for random seed
 RANDOM_SEED = 0
@@ -43,7 +64,7 @@ class DefaultStore:
 
 
 def default_filters():
-    return [ia.Filters.BITSHUFFLE]
+    return [Filters.BITSHUFFLE]
 
 
 @dataclass
@@ -51,10 +72,10 @@ class Defaults(object):
     # Config params
     # Keep in sync the defaults below with Config.__doc__ docstring.
     _config = None
-    codec: ia.Codecs = ia.Codecs.ZSTD
+    codec: Codecs = Codecs.ZSTD
     clevel: int = 1
     use_dict: bool = False
-    filters: List[ia.Filters] = field(default_factory=default_filters)
+    filters: List[Filters] = field(default_factory=default_filters)
     nthreads: int = 0
     fp_mantissa_bits: int = 0
     dtype: (np.float32, np.float64) = np.float64
@@ -215,10 +236,11 @@ class Store:
 
         if self.chunks and self.blocks:
             self.plainbuffer = False
+        elif not self.chunks and not self.blocks:
+            self.plainbuffer = True
         else:
             if self.plainbuffer:
-                if self.chunks or self.blocks:
-                    raise ValueError("plainbuffer array does not support neither a chunks nor blocks")
+                raise ValueError("plainbuffer array does not support neither a chunks nor blocks")
             else:
                 raise ValueError("blosc array needs chunks and blocks")
 
@@ -279,9 +301,9 @@ class Config():
     config
     """
 
-    codec: ia.Codecs = field(default_factory=defaults._codec)
+    codec: Codecs = field(default_factory=defaults._codec)
     clevel: int = field(default_factory=defaults._clevel)
-    filters: List[ia.Filters] = field(default_factory=defaults._filters)
+    filters: List[Filters] = field(default_factory=defaults._filters)
     fp_mantissa_bits: int = field(default_factory=defaults._fp_mantissa_bits)
     use_dict: bool = field(default_factory=defaults._use_dict)
     nthreads: int = field(default_factory=defaults._nthreads)
@@ -328,6 +350,25 @@ class Config():
         cfg = Config(**kwargs)
         return cfg
 
+    @property
+    def kwargs(self):
+        return asdict(self)
+
+    @property
+    def cat_kwargs(self):
+        kwargs = {
+            'codec': self.codec,
+            'clevel': self.clevel,
+            'usedict': self.use_dict,
+            'nthreads': self.nthreads,
+            'filters': self.filters,
+            'filtersmeta': [0] * len(self.filters),  # no actual meta info for SHUFFLE, but anyway...
+            'chunks': self.chunks,
+            'blocks': self.blocks,
+            'urlpath': self.urlpath,
+            'sequencial': self.enforce_frame
+        }
+        return kwargs
 
 # Global config
 global_config = Config()
