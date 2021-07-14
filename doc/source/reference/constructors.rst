@@ -2,7 +2,7 @@
 Array creation routines
 -----------------------
 
-.. currentmodule:: iarrayce
+.. currentmodule:: iarray_community
 
 Basic constructors
 ==================

@@ -30,15 +30,23 @@ class IArray(cat.NDArray):
 
     @property
     def dtype(self):
-        """The data type for the container."""
+        """
+        The data type for the container.
+        """
         return self._dtype
 
     @property
     def data(self):
+        """
+        Get a ndarray with array data.
+        """
         return self[:]
 
     @property
     def is_plainbuffer(self):
+        """
+        Bool indicating if the container is based on a plainbuffer or not.
+        """
         return self.chunks is None
 
     @property

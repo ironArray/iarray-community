@@ -2,7 +2,7 @@
 Configuration
 -------------
 
-.. currentmodule:: iarrayce
+.. currentmodule:: iarray_community
 
 
 Storage properties

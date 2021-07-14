@@ -4,11 +4,44 @@ import caterva as cat
 from .constructors import add_meta
 
 def iarray2numpy(iarr) -> np.ndarray:
+    """Convert an ironArray array into a NumPy array.
+
+    Parameters
+    ----------
+    iarr : IArray
+        The array to convert.
+
+    Returns
+    -------
+    np.ndarray
+        The new NumPy array.
+
+    See Also
+    --------
+    numpy2iarray
+    """
     return iarr[:]
 
 
 def numpy2iarray(ndarray, **kwargs) -> ia.IArray:
+    """Convert a NumPy array into an ironArray array.
 
+    `kwargs` are the same than for :func:`empty`.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        The array to convert.
+
+    Returns
+    -------
+    IArray
+        The new ironArray array.
+
+    See Also
+    --------
+    iarray2numpy
+    """
     with ia.config(**kwargs) as cfg:
         kwargs = cfg.kwargs
         if ndarray.dtype == np.float64:
@@ -40,6 +73,20 @@ def copy(array, **kwargs):
 
 
 def open(urlpath):
+    """Open an array from a binary file in ironArray ``.iarray`` format. The array data will lazily
+    be read when necessary.
+
+    Parameters
+    ----------
+    filename : str
+        The file name to read.
+
+    Returns
+    -------
+    IArray
+        The new opened array.
+
+    """
     arr = cat.NDArray()
     cat.ext.from_file(arr, urlpath)
 

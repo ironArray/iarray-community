@@ -2,7 +2,7 @@
 N-Dimensional Array
 -------------------
 
-.. currentmodule:: iarrayce
+.. currentmodule:: iarray_community
 
 
 Attributes
@@ -41,8 +41,6 @@ Utilities
    :toctree: autofiles/iarray
    :nosignatures:
 
-   copy
    open
-   remove
    iarray2numpy
    numpy2iarray
