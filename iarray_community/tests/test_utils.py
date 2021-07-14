@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import iarrayce as ia
+import iarray_community as ia
 import os
 
 

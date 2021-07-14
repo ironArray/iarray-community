@@ -1,5 +1,5 @@
 import numpy as np
-import iarrayce as ia
+import iarray_community as ia
 import caterva as cat
 from .constructors import add_meta
 

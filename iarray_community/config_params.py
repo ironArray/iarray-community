@@ -9,7 +9,7 @@
 # Information and shall use it only in accordance with the terms of the license agreement.
 ###########################################################################################
 
-import iarrayce as ia
+import iarray_community as ia
 
 from dataclasses import dataclass, field, fields, replace, asdict
 from typing import List, Sequence, Any, Union

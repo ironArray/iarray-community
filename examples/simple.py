@@ -1,4 +1,4 @@
-from src import iarrayce as ia
+import iarray_community as ia
 import numpy as np
 
 arr = np.arange(1000 * 1000, dtype=np.float64)
