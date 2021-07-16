@@ -258,10 +258,6 @@ class Config():
     clevel : int
         The compression level.  It can have values between 0 (no compression) and
         9 (max compression).  Default is 1.
-    favor : Favors
-        What favor when compressing. Possible values are :py:obj:`Favors.SPEED <Favors>`
-        for better speed, :py:obj:`Favors.CRATIO <Favors>` for bettwer compresion ratios
-        and :py:obj:`Favors.BALANCE <Favors>`.  Default is :py:obj:`Favors.BALANCE <Favors>`.
     filters : list
         The list of filters for Blosc.  Default is [:py:obj:`Filters.BITSHUFFLE <Filters>`].
     fp_mantissa_bits : int
@@ -276,17 +272,6 @@ class Config():
         The number of threads for internal ironArray operations.  This number can be
         silently capped to be the number of *logical* cores in the system.  If 0
         (the default), the number of logical cores in the system is used.
-    eval_method : Eval
-        Method to evaluate expressions.  The default is :py:obj:`Eval.AUTO <Eval>`, where the
-        expression is analyzed and the more convenient method is used.
-    seed : int
-        The default seed for internal random generators.  If None (the default), a
-        seed will automatically be generated internally for you.
-    random_gen : RandomGen
-        The random generator to be used.  The default is
-        :py:obj:`RandomGen.MERSENNE_TWISTER <RandomGen>`.
-    btune: bool
-        Enable btune machinery. The default is True.
     dtype: (np.float32, np.float64)
         The data type to use. The default is np.float64.
     store : Store
