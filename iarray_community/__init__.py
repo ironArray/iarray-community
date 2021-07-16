@@ -11,3 +11,5 @@ from .config_params import (
     reset_config_defaults,
 )
 from .utils import numpy2iarray, iarray2numpy, open, remove, copy
+
+__version__ = '0.0.4.dev0'
