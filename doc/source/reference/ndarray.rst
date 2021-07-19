@@ -1,6 +1,7 @@
 -------------------
 N-Dimensional Array
 -------------------
+The multidimensional data array class. This class consists of a set of useful parameters and functions that allow not only to define an array correctly, but also to handle it in a simple way, being able to copy this array and transform it from a file or NumPy format to the ironArray format.
 
 .. currentmodule:: iarray_community
 
