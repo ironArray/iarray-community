@@ -1,7 +1,7 @@
 -----------------------
 Array creation routines
 -----------------------
-These functions let users to create either empty ironArray arrays or ironArray arrays filled with a specific value.
+These functions let users to create either empty or filled with a specific value arrays.
 
 .. currentmodule:: iarray_community
 
