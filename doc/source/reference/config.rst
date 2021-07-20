@@ -2,6 +2,8 @@
 Configuration
 -------------
 
+If you are working with known datasets with stable characteristics, setting the same compression and storage properties every time you create an ironArray array object can become tedious and repetitive. However, you can set default properties in the global configuration to avoid this annoying situation.
+
 .. currentmodule:: iarray_community
 
 

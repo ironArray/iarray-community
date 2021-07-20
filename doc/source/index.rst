@@ -16,4 +16,5 @@ For more information about ironArray Community, see: https://ironarray.io/produc
 .. toctree::
    :maxdepth: 2
 
+   installing
    reference
