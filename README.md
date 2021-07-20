@@ -9,7 +9,7 @@ For more info, see the docs at: https://ironarray.io/docs/iarray-community/
 
 ## Installing
 
-ironArray Community is now offering a source and a Python wheel for any platform.
+ironArray Community is a pure Python package, so it can easily be installed for any platform.
 You can install binary packages from PyPi using ``pip``:
 
 .. code-block:: console
