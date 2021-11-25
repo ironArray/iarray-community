@@ -7,7 +7,6 @@ import os
 shapes_names = "shape, chunks, blocks"
 shapes_values = [
     ((55, 123, 72), (10, 12, 25), (2, 3, 7)),
-    ((10, 12, 5), None, None),
 ]
 dtype_names = "dtype"
 dtype_values = [
@@ -19,10 +18,7 @@ dtype_values = [
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_numpy(shape, chunks, blocks, dtype):
-    if blocks is None or chunks is None:
-        store = ia.Store(plainbuffer=True)
-    else:
-        store = ia.Store(chunks, blocks)
+    store = ia.Store(chunks, blocks)
     with ia.config(store=store):
 
         b = np.linspace(0, 1, int(np.prod(shape)), dtype=dtype).reshape(shape)
@@ -38,19 +34,13 @@ shapes_names = "shape, chunks, blocks, chunks2, blocks2"
 shapes_values = [
     ((55, 123, 72), (10, 12, 25), (2, 3, 7), (55, 1, 72), (2, 1, 5)),
     ((55, 123), (10, 12), (2, 3), (10, 12), (2, 3)),
-    ((10, 12, 5), None, None, (5, 5, 5), (2, 3, 4)),
-    ((55, 123), (10, 12), (2, 3), None, None),
-
 ]
 
 
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_copy(shape, chunks, blocks, chunks2, blocks2, dtype):
-    if blocks is None or chunks is None:
-        store = ia.Store(plainbuffer=True)
-    else:
-        store = ia.Store(chunks, blocks)
+    store = ia.Store(chunks, blocks)
     with ia.config(store=store):
 
         b = np.linspace(0, 1, int(np.prod(shape)), dtype=dtype).reshape(shape)
@@ -85,10 +75,7 @@ def test_open(shape, chunks, blocks, chunks2, blocks2, dtype, const):
     if os.path.exists(urlpath):
         ia.remove(urlpath)
 
-    if blocks is None or chunks is None:
-        store = ia.Store(plainbuffer=True)
-    else:
-        store = ia.Store(chunks, blocks, urlpath=urlpath)
+    store = ia.Store(chunks, blocks, urlpath=urlpath)
     with ia.config(store=store):
         if const == "empty":
             a = ia.empty(shape)

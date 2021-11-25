@@ -1,12 +1,10 @@
 from .iarray import IArray
 from .constructors import empty, zeros, ones, full
 from .config_params import (
-    Codecs,
-    Filters,
+    Codec,
+    Filter,
     Config,
     Store,
-    set_config,
-    get_config,
     config,
     reset_config_defaults,
 )
