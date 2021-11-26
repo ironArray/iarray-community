@@ -20,7 +20,7 @@ from enum import Enum
 
 
 # Compression codecs
-class Codecs(Enum):
+class Codec(Enum):
     BLOSCLZ = 0
     LZ4 = 1
     LZ4HC = 2
@@ -30,16 +30,12 @@ class Codecs(Enum):
 
 
 # Filters
-class Filters(Enum):
+class Filter(Enum):
     NOFILTER = 0
     SHUFFLE = 1
     BITSHUFFLE = 2
     DELTA = 4
     TRUNC_PREC = 8
-
-
-# Global variable for random seed
-RANDOM_SEED = 0
 
 
 @dataclass
@@ -59,12 +55,12 @@ class DefaultStore:
     chunks: Any
     blocks: Any
     urlpath: Any
-    enforce_frame: Any
-    plainbuffer: Any
+    mode: Any
+    contiguous: Any
 
 
 def default_filters():
-    return [Filters.BITSHUFFLE]
+    return [Filter.SHUFFLE]
 
 
 @dataclass
@@ -72,10 +68,10 @@ class Defaults(object):
     # Config params
     # Keep in sync the defaults below with Config.__doc__ docstring.
     _config = None
-    codec: Codecs = Codecs.ZSTD
-    clevel: int = 1
+    codec: Codec = Codec.LZ4
+    clevel: int = 9
     use_dict: bool = False
-    filters: List[Filters] = field(default_factory=default_filters)
+    filters: List[Filter] = field(default_factory=default_filters)
     nthreads: int = 0
     fp_mantissa_bits: int = 0
     dtype: (np.float32, np.float64) = np.float64
@@ -85,8 +81,12 @@ class Defaults(object):
     chunks: Sequence = None
     blocks: Sequence = None
     urlpath: str = None
-    enforce_frame: bool = False
-    plainbuffer: bool = True
+    mode: str = "r"
+    contiguous: bool = None
+
+    # Keep track of the special params set with default values for consistency checks with btune
+    compat_params: set = field(default_factory=set)
+    check_compat: bool = True
 
     def __post_init__(self):
         # Initialize config and store with its getters and setters
@@ -94,15 +94,18 @@ class Defaults(object):
 
     # Accessors only meant to serve as default_factory
     def _codec(self):
+        self.compat_params.add("codec")
         return self.codec
 
     def _clevel(self):
+        self.compat_params.add("clevel")
         return self.clevel
 
     def _use_dict(self):
         return self.use_dict
 
     def _filters(self):
+        self.compat_params.add("filters")
         return self.filters
 
     def _nthreads(self):
@@ -155,11 +158,11 @@ class Defaults(object):
     def _urlpath(self):
         return self.urlpath
 
-    def _enforce_frame(self):
-        return self.enforce_frame
+    def _mode(self):
+        return self.mode
 
-    def _plainbuffer(self):
-        return self.plainbuffer
+    def _contiguous(self):
+        return self.contiguous
 
     @property
     def store(self):
@@ -169,8 +172,8 @@ class Defaults(object):
                 chunks=self.chunks,
                 blocks=self.blocks,
                 urlpath=self.urlpath,
-                enforce_frame=self.enforce_frame,
-                plainbuffer=self.plainbuffer,
+                mode=self.mode,
+                contiguous=self.contiguous,
             )
         return self._store
 
@@ -180,8 +183,8 @@ class Defaults(object):
         self.chunks = value.chunks
         self.blocks = value.blocks
         self.urlpath = value.urlpath
-        self.enforce_frame = value.enforce_frame
-        self.plainbuffer = value.plainbuffer
+        self.mode = value.mode
+        self.contiguous = value.contiguous
         self._store = value
 
 
@@ -199,50 +202,39 @@ class Store:
     Parameters
     ----------
     chunks : list, tuple
-        The chunks for the output array.  If None (the default), a sensible default
-        will be used based on the shape of the array and the size of caches in the current
-        processor.
+        The chunk shape for the output array.
     blocks : list, tuple
-        The blocks for the output array.  If None (the default), a sensible default
-        will be used based on the shape of the array and the size of caches in the current
-        processor.
+        The block shape for the output array.
     urlpath : str
         The name of the file for persistently storing the output array.  If None (the default),
         the output array will be stored in-memory.
-    enforce_frame : bool
-        If True, the output array will be stored as a frame, even when in-memory.  If False
-        (the default), the store will be sparse.  Currently, persistent store only supports
-        the frame format. When in-memory, the array can be in sparse (the default)
-        or contiguous form (frame), depending on this flag.
-    plainbuffer : bool
-        When True, the output array will be stored on a plain, contiguous buffer, without
-        any compression.  This can help faster data sharing among other data containers
-        (e.g. NumPy).  When False (the default), the output array will be stored in a Blosc
-        container, which can be compressed (the default).
+    mode : str
+        Persistence mode: 'r' means read only (must exist); 'r+' means read/write (must exist);
+        'a' means read/write (create if doesn’t exist); 'w' means create (overwrite if exists);
+        'w-' means create (fail if exists).  Default is 'r'.
+    contiguous : bool
+        If True, the output array will be stored contiguously, even when in-memory.  If False,
+        the store will be sparse. The default value is False for in-memory and True for persistent
+        storage.
     """
 
     global defaults
     chunks: Union[Sequence, None] = field(default_factory=defaults._chunks)
     blocks: Union[Sequence, None] = field(default_factory=defaults._blocks)
     urlpath: bytes or str = field(default_factory=defaults._urlpath)
-    enforce_frame: bool = field(default_factory=defaults._enforce_frame)
-    plainbuffer: bool = field(default_factory=defaults._plainbuffer)
+    mode: bytes or str = field(default_factory=defaults._mode)
+    contiguous: bool = field(default_factory=defaults._contiguous)
 
     def __post_init__(self):
         self.urlpath = (
             self.urlpath.encode("utf-8") if isinstance(self.urlpath, str) else self.urlpath
         )
-        self.enforce_frame = True if self.urlpath else self.enforce_frame
-
-        if self.chunks and self.blocks:
-            self.plainbuffer = False
-        elif not self.chunks and not self.blocks:
-            self.plainbuffer = True
+        if self.contiguous is None and self.urlpath is not None:
+            self.contiguous = True
         else:
-            if self.plainbuffer:
-                raise ValueError("plainbuffer array does not support neither a chunks nor blocks")
-            else:
-                raise ValueError("blosc array needs chunks and blocks")
+            self.contiguous = self.contiguous
+        self.mode = self.mode.encode("utf-8") if isinstance(self.mode, str) else self.mode
+
 
 @dataclass
 class Config():
@@ -253,41 +245,42 @@ class Config():
 
     Parameters
     ----------
-    codec : Codecs
-        The codec to be used inside Blosc.  Default is :py:obj:`Codecs.ZSTD <Codecs>`.
+    codec : :class:`Codec`
+        The codec to be used inside Blosc.  Default is :py:obj:`Codec.ZSTD <Codec>`.
     clevel : int
         The compression level.  It can have values between 0 (no compression) and
         9 (max compression).  Default is 1.
-    filters : list
-        The list of filters for Blosc.  Default is [:py:obj:`Filters.BITSHUFFLE <Filters>`].
+    filters : :class:`Filter` list
+        The list of filters for Blosc.  Default is [:py:obj:`Filter.BITSHUFFLE <Filter>`].
     fp_mantissa_bits : int
         The number of bits to be kept in the mantissa in output arrays.  If 0 (the default),
         no precision is capped.  FYI, double precision have 52 bit in mantissa, whereas
         single precision has 23 bit.  For example, if you set this to 23 for doubles,
         you will be using a compressed store very close as if you were using singles.
+        This automatically activates the ia.Filter.TRUNC_PREC at the front of the filter list.
     use_dict : bool
         Whether Blosc should use a dictionary for enhanced compression (currently only
-        supported by :py:obj:`Codecs.ZSTD <Codecs>`).  Default is False.
+        supported by :py:obj:`Codec.ZSTD <Codec>`).  Default is False.
     nthreads : int
         The number of threads for internal ironArray operations.  This number can be
         silently capped to be the number of *logical* cores in the system.  If 0
         (the default), the number of logical cores in the system is used.
     dtype: (np.float32, np.float64)
         The data type to use. The default is np.float64.
-    store : Store
+    store : :class:`Store`
         Store instance where you can specify different properties of the output
         store.  See :py:obj:`Store` docs for details.  For convenience, you can also
         pass all the Store parameters directly in this constructor too.
 
     See Also
     --------
-    set_config
+    set_config_defaults
     config
     """
 
-    codec: Codecs = field(default_factory=defaults._codec)
+    codec: Codec = field(default_factory=defaults._codec)
     clevel: int = field(default_factory=defaults._clevel)
-    filters: List[Filters] = field(default_factory=defaults._filters)
+    filters: List[Filter] = field(default_factory=defaults._filters)
     fp_mantissa_bits: int = field(default_factory=defaults._fp_mantissa_bits)
     use_dict: bool = field(default_factory=defaults._use_dict)
     nthreads: int = field(default_factory=defaults._nthreads)
@@ -298,22 +291,43 @@ class Config():
     chunks: Union[Sequence, None] = field(default_factory=defaults._chunks)
     blocks: Union[Sequence, None] = field(default_factory=defaults._blocks)
     urlpath: bytes or str = field(default_factory=defaults._urlpath)
-    enforce_frame: bool = field(default_factory=defaults._enforce_frame)
-    plainbuffer: bool = field(default_factory=defaults._plainbuffer)
+    mode: bytes or str = field(default_factory=defaults._mode)
+    contiguous: bool = field(default_factory=defaults._contiguous)
 
     def __post_init__(self):
+        if defaults.check_compat:
+            self.check_config_params()
+        # Restore variable for next time
+        defaults.compat_params = set()
+        defaults.check_compat = True
+
+        if self.urlpath is not None and self.contiguous is None:
+            self.contiguous = True
+
         if self.store is None:
             self.store = Store(
                 chunks=self.chunks,
                 blocks=self.blocks,
                 urlpath=self.urlpath,
-                enforce_frame=self.enforce_frame,
-                plainbuffer=self.plainbuffer,
+                mode=self.mode,
+                contiguous=self.contiguous,
             )
-        if self.nthreads == 0:
-            self.nthreads = 1
+
+        if self.nthreads <= 0:
+            ncores = 1
+            self.nthreads = ncores
+
+        # Activate TRUNC_PREC filter only if mantissa_bits > 0
+        if self.fp_mantissa_bits != 0 and Filter.TRUNC_PREC not in self.filters:
+            self.filters.insert(0, Filter.TRUNC_PREC)
+        # De-activate TRUNC_PREC filter if mantissa_bits == 0
+        if self.fp_mantissa_bits == 0 and Filter.TRUNC_PREC in self.filters:
+            self.filters.pop(0)
+
 
     def _replace(self, **kwargs):
+        # When a replace is done a new object from the class is created with all its params passed as kwargs
+        defaults.check_compat = False
         cfg_ = replace(self, **kwargs)
         if "store" in kwargs:
             store = kwargs["store"]
@@ -331,8 +345,12 @@ class Config():
         kwargs = asdict(self)
         # asdict is recursive, but we need the store kwarg as a Store object
         kwargs["store"] = Store(**kwargs["store"])
+        defaults.check_compat = False
         cfg = Config(**kwargs)
         return cfg
+
+    def check_config_params(self, **kwargs):
+        pass
 
     @property
     def kwargs(self):
@@ -350,78 +368,55 @@ class Config():
             'chunks': self.chunks,
             'blocks': self.blocks,
             'urlpath': self.urlpath,
-            'sequencial': self.enforce_frame
+            'sequencial': self.contiguous
         }
         return kwargs
 
 # Global config
 global_config = Config()
-global_diff = []
 
 
-def get_config(cfg=None):
+def get_config_defaults():
     """Get the global defaults for iarray operations.
-
-    Parameters
-    ----------
-    cfg
-        The base configuration to which the changes will apply.
 
     Returns
     -------
-    ia.Config
+    :class:`Config`
         The existing global configuration.
 
     See Also
     --------
-    ia.set_config
+    set_config_defaults
     """
-    global global_config
-    global global_diff
-
-    if not cfg:
-        cfg = global_config
-    else:
-        cfg = copy.deepcopy(cfg)
-
-    for diff in global_diff:
-        cfg = cfg._replace(**diff)
-
-    return cfg
+    return global_config
 
 
-def set_config(cfg: Config = None, shape=None, **kwargs):
+def set_config_defaults(cfg: Config = None, **kwargs):
     """Set the global defaults for iarray operations.
 
     Parameters
     ----------
-    cfg : ia.Config
+    cfg : :class:`Config`
         The configuration that will become the default for iarray operations.
         If None, the defaults are not changed.
-    shape : Sequence
-        This is not part of the global configuration as such, but if passed,
-        it will be used so as to compute sensible defaults for store properties
-        like chunks and blocks.  This is mainly meant for internal use.
     kwargs : dict
-        A dictionary for setting some or all of the fields in the ia.Config
+        A dictionary for setting some or all of the fields in the :class:`Config`
         dataclass that should override the current configuration.
 
     Returns
     -------
-    ia.Config
+    :class:`Config`
         The new global configuration.
 
     See Also
     --------
-    ia.Config
-    ia.get_config
+    Config
+    get_config_defaults
     """
     global global_config
-    global global_diff
     global defaults
 
-    cfg_old = get_config()
-    d_old = asdict(cfg_old)
+    cfg_old = get_config_defaults()
 
     if cfg is None:
         cfg = copy.deepcopy(cfg_old)
@@ -429,20 +424,19 @@ def set_config(cfg: Config = None, shape=None, **kwargs):
         cfg = copy.deepcopy(cfg)
 
     if kwargs != {}:
-        cfg = cfg._replace(**kwargs)
-    if shape is not None:
-        cfg._replace(**{"store": cfg.store})
+        cfg.check_config_params(**kwargs)
+        # The default when creating frames on-disk is to use contiguous storage (mainly because of performance  reasons)
+        if (kwargs.get("contiguous", None) is None
+            and cfg.contiguous is None
+            and kwargs.get("urlpath", None) is not None):
+            cfg = cfg._replace(**dict(kwargs, contiguous=True))
+        else:
+            cfg = cfg._replace(**kwargs)
 
-    d = asdict(cfg)
-
-    diff = {k: d[k] for k in d.keys() if d_old[k] != d[k]}
-    if "store" in diff:
-        diff["store"] = Store(**diff["store"])
-
-    global_diff.append(diff)
+    global_config = cfg
     defaults.config = cfg
 
-    return get_config()
+    return get_config_defaults()
 
 
 # Initialize the configuration
@@ -452,72 +446,32 @@ def set_config(cfg: Config = None, shape=None, **kwargs):
 def config(cfg: Config = None, shape=None, **kwargs):
     """Create a context with some specific configuration parameters.
 
-    All parameters are the same than in `ia.set_config()`.
+    All parameters are the same than in :class:`Config()`.
     The only difference is that this does not set global defaults.
 
     See Also
     --------
-    ia.set_config
-    ia.Config
+    set_config_defaults
+    Config
     """
     global global_config
-    global global_diff
     global defaults
 
-    cfg = set_config(cfg, shape, **kwargs)
+    cfg_aux = get_config_defaults()
+    cfg = set_config_defaults(cfg, **kwargs)
 
     try:
         yield cfg
     finally:
-        global_diff.pop()
-
-        cfg_old = copy.deepcopy(global_config)
-        for diff in global_diff:
-            cfg_old = cfg_old._replace(**diff)
-        defaults.config = cfg_old
+        defaults.config = cfg_aux
+        global_config = cfg_aux
 
 
 def reset_config_defaults():
     """Reset the defaults of the configuration parameters."""
     global global_config
-    global global_diff
     global defaults
 
     defaults.config = Defaults()
     global_config = Config()
-    global_diff = []
     return global_config
-
-
-if __name__ == "__main__":
-    cfg_ = get_config()
-    print("Defaults:", cfg_)
-    assert cfg_.store.enforce_frame is False
-
-    set_config(store=Store(enforce_frame=True, chunks=(100, 100), blocks=(10, 10)))
-    cfg = get_config()
-    print("1st form:", cfg)
-    assert cfg.store.enforce_frame is True
-
-    set_config(enforce_frame=False)
-    cfg = get_config()
-    print("2nd form:", cfg)
-    assert cfg.store.enforce_frame is False
-
-    set_config(Config(clevel=5))
-    cfg = get_config()
-    print("3rd form:", cfg)
-    assert cfg.clevel == 5
-
-    with config(clevel=0, enforce_frame=True) as cfg_new:
-        print("Context form:", cfg_new)
-        assert cfg_new.store.enforce_frame is True
-        assert get_config().clevel == 0
-
-    cfg = ia.Config(codec=ia.Codecs.BLOSCLZ)
-    cfg2 = ia.set_config(cfg=cfg, codec=ia.Codecs.LIZARD)
-    print("Standalone config:", cfg)
-    print("Global config", cfg2)
-
-    cfg = ia.set_config(cfg_)
-    print("Defaults config:", cfg)

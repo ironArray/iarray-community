@@ -43,13 +43,6 @@ class IArray(cat.NDArray):
         return self[:]
 
     @property
-    def is_plainbuffer(self):
-        """
-        Bool indicating if the container is based on a plainbuffer or not.
-        """
-        return self.chunks is None
-
-    @property
     def info(self):
         """
         Print information about this array.
@@ -67,7 +60,7 @@ class IArray(cat.NDArray):
         return items
 
     def __getitem__(self, key):
-        return np.array(self.slice(key)).view(self.dtype)
+        return super(IArray, self).__getitem__(key).view(self.dtype)
 
     def slice(self, key, **kwargs):
         arr = super(IArray, self).slice(key, **kwargs)
