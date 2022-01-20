@@ -19,16 +19,12 @@ if os.path.exists(urlpath):
 
 with ia.config(chunks=chunks, blocks=blocks, urlpath=urlpath):
 
-    aux = np.linspace(0, 1, int(np.prod(shape)), dtype=dtype).reshape(shape)
-    # a = ia.numpy2iarray(aux)
     a = ia.full(shape, 3, dtype=dtype)
     print(a.info)
 
-    b = cat.open(urlpath)
-    print(msgpack.unpackb(b.meta["caterva"]))
-    print(b.meta["iarray"])
+    b = ia.open(urlpath)
+    print(b.info)
 
-    print(b.itemsize)
 
 if os.path.exists(urlpath):
     ia.remove(urlpath)
