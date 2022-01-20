@@ -19,7 +19,6 @@ Attributes
    IArray.cratio
    IArray.data
    IArray.dtype
-   IArray.is_plainbuffer
    IArray.ndim
    IArray.shape
    IArray.info

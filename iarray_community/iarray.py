@@ -1,8 +1,40 @@
 import caterva as cat
+import msgpack
 import numpy as np
 from .info import InfoReporter
 import iarray_community as ia
 import os
+
+
+dtype_to_meta = {
+    np.dtype('float64'): 0,
+    np.dtype('float32'): 1,
+    # np.dtype('float16'): 2,
+    # np.dtype('float8'): 3,
+    np.dtype('int64'): 10,
+    np.dtype('int32'): 11,
+    np.dtype('int16'): 12,
+    np.dtype('int8'): 13,
+    np.dtype('uint64'): 16,
+    np.dtype('uint32'): 17,
+    np.dtype('uint16'): 18,
+    np.dtype('uint8'): 19,
+    np.dtype('bool'): 24
+}
+meta_to_dtype = {v: k for k, v in dtype_to_meta.items()}
+
+supported_dtypes = list(dtype_to_meta.keys())
+
+
+def add_meta(dtype, **kwargs):
+    if "meta" not in kwargs:
+        kwargs["meta"] = {}
+    s_version = 0
+    s_dtype = dtype_to_meta[dtype]
+    s_unused = 0
+    s_meta = msgpack.packb([s_version, s_dtype, s_unused])
+    kwargs["meta"]["iarray"] = s_meta
+    return kwargs
 
 
 class IArray(cat.NDArray):
@@ -12,9 +44,9 @@ class IArray(cat.NDArray):
         super(IArray, self).__init__(**self._cfg.cat_kwargs)
 
     def pre_init(self, **kwargs):
-        dtype = kwargs["dtype"]
-        if dtype != np.float64 and dtype != np.float32:
-            raise AttributeError("dtype can only be np.float32 or np.float64")
+        dtype = np.dtype(kwargs["dtype"])
+        if dtype not in dtype_to_meta:
+            raise AttributeError("dtype is not supported")
         self._dtype = dtype
 
         urlpath = kwargs["urlpath"]
@@ -25,7 +57,10 @@ class IArray(cat.NDArray):
     def cast(cls, cont):
         cont.__class__ = cls
         assert isinstance(cont, IArray)
-        cont._dtype = np.float64 if cont.itemsize == 8 else np.float32
+        iarray_meta = cont.meta["iarray"]
+        _, s_dtype, _ = msgpack.unpackb(iarray_meta)
+        cont._dtype = meta_to_dtype[s_dtype]
+
         return cont
 
     @property
@@ -53,6 +88,7 @@ class IArray(cat.NDArray):
     def info_items(self):
         items = []
         items += [("type", self.__class__.__name__)]
+        items += [("dtype", self.dtype)]
         items += [("shape", self.shape)]
         items += [("chunks", self.chunks)]
         items += [("blocks", self.blocks)]
@@ -63,6 +99,7 @@ class IArray(cat.NDArray):
         return super(IArray, self).__getitem__(key).view(self.dtype)
 
     def slice(self, key, **kwargs):
+        kwargs = add_meta(self.dtype, **kwargs)
         arr = super(IArray, self).slice(key, **kwargs)
         return self.cast(arr)
 

@@ -46,17 +46,7 @@ class DefaultConfig:
     filters: Any
     nthreads: Any
     fp_mantissa_bits: Any
-    store: Any
     dtype: Any
-
-
-@dataclass
-class DefaultStore:
-    chunks: Any
-    blocks: Any
-    urlpath: Any
-    mode: Any
-    contiguous: Any
 
 
 def default_filters():
@@ -74,14 +64,12 @@ class Defaults(object):
     filters: List[Filter] = field(default_factory=default_filters)
     nthreads: int = 0
     fp_mantissa_bits: int = 0
-    dtype: (np.float32, np.float64) = np.float64
+    dtype: np.dtype = np.float64
 
     # Store
-    _store = None
     chunks: Sequence = None
     blocks: Sequence = None
-    urlpath: str = None
-    mode: str = "r"
+    urlpath: bytes or str = None
     contiguous: bool = None
 
     # Keep track of the special params set with default values for consistency checks with btune
@@ -128,7 +116,6 @@ class Defaults(object):
                 filters=self.filters,
                 nthreads=self.nthreads,
                 fp_mantissa_bits=self.fp_mantissa_bits,
-                store=self.store,
                 dtype=self.dtype,
             )
         return self._config
@@ -144,10 +131,7 @@ class Defaults(object):
         self.nthreads = value.nthreads
         self.fp_mantissa_bits = value.fp_mantissa_bits
         self.dtype = value.dtype
-        self._store = value.store
         self._config = value
-        if self._store is not None:
-            self.set_store(self._store)
 
     def _chunks(self):
         return self.chunks
@@ -158,82 +142,12 @@ class Defaults(object):
     def _urlpath(self):
         return self.urlpath
 
-    def _mode(self):
-        return self.mode
-
     def _contiguous(self):
         return self.contiguous
-
-    @property
-    def store(self):
-        if self._store is None:
-            # Bootstrap the defaults
-            return DefaultStore(
-                chunks=self.chunks,
-                blocks=self.blocks,
-                urlpath=self.urlpath,
-                mode=self.mode,
-                contiguous=self.contiguous,
-            )
-        return self._store
-
-    def set_store(self, value):
-        if not hasattr(value, "chunks"):
-            raise ValueError(f"You need to use a `Store` instance")
-        self.chunks = value.chunks
-        self.blocks = value.blocks
-        self.urlpath = value.urlpath
-        self.mode = value.mode
-        self.contiguous = value.contiguous
-        self._store = value
 
 
 # Global variable where the defaults for config params are stored
 defaults = Defaults()
-
-
-@dataclass
-class Store:
-    """Dataclass for hosting different store properties.
-
-    All the parameters below are optional.  In case you don't specify one, a
-    sensible default (see below) is used.
-
-    Parameters
-    ----------
-    chunks : list, tuple
-        The chunk shape for the output array.
-    blocks : list, tuple
-        The block shape for the output array.
-    urlpath : str
-        The name of the file for persistently storing the output array.  If None (the default),
-        the output array will be stored in-memory.
-    mode : str
-        Persistence mode: 'r' means read only (must exist); 'r+' means read/write (must exist);
-        'a' means read/write (create if doesn’t exist); 'w' means create (overwrite if exists);
-        'w-' means create (fail if exists).  Default is 'r'.
-    contiguous : bool
-        If True, the output array will be stored contiguously, even when in-memory.  If False,
-        the store will be sparse. The default value is False for in-memory and True for persistent
-        storage.
-    """
-
-    global defaults
-    chunks: Union[Sequence, None] = field(default_factory=defaults._chunks)
-    blocks: Union[Sequence, None] = field(default_factory=defaults._blocks)
-    urlpath: bytes or str = field(default_factory=defaults._urlpath)
-    mode: bytes or str = field(default_factory=defaults._mode)
-    contiguous: bool = field(default_factory=defaults._contiguous)
-
-    def __post_init__(self):
-        self.urlpath = (
-            self.urlpath.encode("utf-8") if isinstance(self.urlpath, str) else self.urlpath
-        )
-        if self.contiguous is None and self.urlpath is not None:
-            self.contiguous = True
-        else:
-            self.contiguous = self.contiguous
-        self.mode = self.mode.encode("utf-8") if isinstance(self.mode, str) else self.mode
 
 
 @dataclass
@@ -265,12 +179,24 @@ class Config():
         The number of threads for internal ironArray operations.  This number can be
         silently capped to be the number of *logical* cores in the system.  If 0
         (the default), the number of logical cores in the system is used.
-    dtype: (np.float32, np.float64)
+    dtype: (np.float64, np.float32, np.int64, np.int32, np.int16, np.int8, np.uint64, np.uint32, np.uint16,
+        np.uint8, np.bool_)
         The data type to use. The default is np.float64.
-    store : :class:`Store`
-        Store instance where you can specify different properties of the output
-        store.  See :py:obj:`Store` docs for details.  For convenience, you can also
-        pass all the Store parameters directly in this constructor too.
+    chunks : list, tuple
+        The chunk shape for the output array.  If None (the default), a sensible default
+        will be used based on the shape of the array and the size of caches in the current
+        processor.
+    blocks : list, tuple
+        The block shape for the output array.  If None (the default), a sensible default
+        will be used based on the shape of the array and the size of caches in the current
+        processor.
+    urlpath : str
+        The name of the file for persistently storing the output array.  If None (the default),
+        the output array will be stored in-memory.
+    contiguous : bool
+        If True, the output array will be stored contiguously, even when in-memory.  If False,
+        the store will be sparse. The default value is False for in-memory and True for persistent
+        storage.
 
     See Also
     --------
@@ -284,14 +210,11 @@ class Config():
     fp_mantissa_bits: int = field(default_factory=defaults._fp_mantissa_bits)
     use_dict: bool = field(default_factory=defaults._use_dict)
     nthreads: int = field(default_factory=defaults._nthreads)
-    dtype: (np.float32, np.float64) = field(default_factory=defaults._dtype)
-    store: Store = None  # delayed initialization
-
-    # These belong to Store, but we accept them in top level too
+    dtype: (np.float64, np.float32, np.int64, np.int32, np.int16, np.int8, np.uint64, np.uint32, np.uint16,
+            np.uint8, np.bool_) = field(default_factory=defaults._dtype)
     chunks: Union[Sequence, None] = field(default_factory=defaults._chunks)
     blocks: Union[Sequence, None] = field(default_factory=defaults._blocks)
     urlpath: bytes or str = field(default_factory=defaults._urlpath)
-    mode: bytes or str = field(default_factory=defaults._mode)
     contiguous: bool = field(default_factory=defaults._contiguous)
 
     def __post_init__(self):
@@ -301,17 +224,8 @@ class Config():
         defaults.compat_params = set()
         defaults.check_compat = True
 
-        if self.urlpath is not None and self.contiguous is None:
+        if self.contiguous is None and self.urlpath is not None:
             self.contiguous = True
-
-        if self.store is None:
-            self.store = Store(
-                chunks=self.chunks,
-                blocks=self.blocks,
-                urlpath=self.urlpath,
-                mode=self.mode,
-                contiguous=self.contiguous,
-            )
 
         if self.nthreads <= 0:
             ncores = 1
@@ -329,22 +243,10 @@ class Config():
         # When a replace is done a new object from the class is created with all its params passed as kwargs
         defaults.check_compat = False
         cfg_ = replace(self, **kwargs)
-        if "store" in kwargs:
-            store = kwargs["store"]
-            if store is not None:
-                for field in fields(Store):
-                    setattr(cfg_, field.name, getattr(store, field.name))
-        else:  # avoid overwriting the store
-            store_args = dict(
-                (field.name, kwargs[field.name]) for field in fields(Store) if field.name in kwargs
-            )
-            cfg_.store = replace(cfg_.store, **store_args)
         return cfg_
 
     def __deepcopy__(self, memodict={}):
         kwargs = asdict(self)
-        # asdict is recursive, but we need the store kwarg as a Store object
-        kwargs["store"] = Store(**kwargs["store"])
         defaults.check_compat = False
         cfg = Config(**kwargs)
         return cfg
