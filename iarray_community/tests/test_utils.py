@@ -18,9 +18,7 @@ dtype_values = [
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_numpy(shape, chunks, blocks, dtype):
-    store = ia.Store(chunks, blocks)
-    with ia.config(store=store):
-
+    with ia.config(chunks=chunks, blocks=blocks):
         b = np.linspace(0, 1, int(np.prod(shape)), dtype=dtype).reshape(shape)
         c = ia.numpy2iarray(b)
         assert c.chunks == chunks
@@ -40,9 +38,7 @@ shapes_values = [
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_copy(shape, chunks, blocks, chunks2, blocks2, dtype):
-    store = ia.Store(chunks, blocks)
-    with ia.config(store=store):
-
+    with ia.config(chunks=chunks, blocks=blocks):
         b = np.linspace(0, 1, int(np.prod(shape)), dtype=dtype).reshape(shape)
         c = ia.numpy2iarray(b)
         assert c.chunks == chunks
@@ -75,8 +71,7 @@ def test_open(shape, chunks, blocks, chunks2, blocks2, dtype, const):
     if os.path.exists(urlpath):
         ia.remove(urlpath)
 
-    store = ia.Store(chunks, blocks, urlpath=urlpath)
-    with ia.config(store=store):
+    with ia.config(chunks=chunks, blocks=blocks, urlpath=urlpath):
         if const == "empty":
             a = ia.empty(shape)
         elif const == "zeros":

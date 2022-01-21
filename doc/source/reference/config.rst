@@ -32,8 +32,6 @@ Set / Get configuration params
    :toctree: autofiles/config/
    :nosignatures:
 
-   set_config
-   get_config
    config
    reset_config_defaults
 
@@ -45,11 +43,13 @@ Enumerated classes
    :toctree: autofiles/config/
    :nosignatures:
 
-   Codecs
-   Filters
+   Codec
+   Filter
 
 
 Global variables
 ================
 
 .. py:attribute:: iarray.__version__
+
+.. py:attribute:: iarray.dtypes

@@ -16,8 +16,7 @@ dtype_values = [
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_empty(shape, chunks, blocks, dtype):
-    store = ia.Store(chunks, blocks)
-    with ia.config(store=store):
+    with ia.config(chunks=chunks, blocks=blocks):
         a = ia.empty(shape, dtype=dtype)
 
     size = np.prod(shape) * np.dtype(dtype).itemsize
@@ -31,8 +30,7 @@ def test_empty(shape, chunks, blocks, dtype):
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_zeros(shape, chunks, blocks, dtype):
-    store = ia.Store(chunks, blocks)
-    with ia.config(store=store):
+    with ia.config(chunks=chunks, blocks=blocks):
         a = ia.zeros(shape, dtype=dtype)
     b = ia.iarray2numpy(a)
     np.testing.assert_allclose(b, 0.)
@@ -41,8 +39,7 @@ def test_zeros(shape, chunks, blocks, dtype):
 @pytest.mark.parametrize(shapes_names, shapes_values)
 @pytest.mark.parametrize(dtype_names, dtype_values)
 def test_ones(shape, chunks, blocks, dtype):
-    store = ia.Store(chunks, blocks)
-    with ia.config(store=store):
+    with ia.config(chunks=chunks, blocks=blocks):
         a = ia.ones(shape, dtype=dtype)
     b = ia.iarray2numpy(a)
     np.testing.assert_allclose(b, 1.)
@@ -53,8 +50,7 @@ def test_ones(shape, chunks, blocks, dtype):
 def test_full(shape, chunks, blocks, dtype):
     fill_value = 3.141516171819
 
-    store = ia.Store(chunks, blocks)
-    with ia.config(store=store):
+    with ia.config(chunks=chunks, blocks=blocks):
         a = ia.full(shape, fill_value, dtype=dtype)
     b = ia.iarray2numpy(a)
     np.testing.assert_allclose(b, fill_value)

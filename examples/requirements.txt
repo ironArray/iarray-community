@@ -1,0 +1,3 @@
+scipy
+h5py
+hdf5plugin
