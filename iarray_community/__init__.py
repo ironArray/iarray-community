@@ -9,4 +9,4 @@ from .config_params import (
 )
 from .utils import numpy2iarray, iarray2numpy, open, remove, copy, slice
 
-__version__ = '0.0.4.dev0'
+__version__ = '0.0.4'
