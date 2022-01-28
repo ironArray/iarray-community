@@ -105,3 +105,8 @@ class IArray(cat.NDArray):
 
     def copy(self, **kwargs):
         return ia.copy(self, **kwargs)
+
+    def resize(self, newshape):
+        super(IArray, self).resize(newshape)
+        return self
+

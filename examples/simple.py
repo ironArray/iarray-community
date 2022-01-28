@@ -5,11 +5,9 @@ import caterva as cat
 import msgpack
 
 
-shape = (55, 123, 72)
-chunks = (10, 12, 25)
-blocks = (2, 3, 7)
-chunks2 = (55, 1, 72)
-blocks2 = (2, 1, 5)
+shape = (10, 10)
+chunks = (5, 5)
+blocks = (2, 3)
 
 dtype = np.float64
 
@@ -25,6 +23,9 @@ with ia.config(chunks=chunks, blocks=blocks, urlpath=urlpath):
     b = ia.open(urlpath)
     print(b.info)
 
+    b.resize((20, 10))
+
+    print(b.info)
 
 if os.path.exists(urlpath):
     ia.remove(urlpath)
