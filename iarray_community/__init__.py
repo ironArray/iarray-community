@@ -5,6 +5,7 @@ from .config_params import (
     Filter,
     Config,
     config,
+    set_config_defaults,
     reset_config_defaults,
 )
 from .utils import numpy2iarray, iarray2numpy, open, remove, copy, slice
